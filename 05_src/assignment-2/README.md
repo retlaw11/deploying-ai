@@ -1,6 +1,11 @@
 ## Assignment 2 Details
 
 This is assignment_chat UfT deploying ai assignment #2. 
+Presenter/Owner: Walter Pareja
+Contact: retlaw1@gmail.com
+@Github Handle: retlaw11 
+----------
+
 
 Functional user flows
 - User can submit prompt via text form to query about stock market data. Some questions that can be asked include
