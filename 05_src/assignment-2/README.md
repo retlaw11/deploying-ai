@@ -6,15 +6,46 @@ Contact: retlaw1@gmail.com
 @Github Handle: retlaw11 
 ----------
 
+assignment-2/
+├── service_1.py          ← Core business logic (production-ready)
+├── app.ipynb             ← UI layer (imports from service)
+└── .secrets              ← Configuration
 
-Functional user flows
-- User can submit prompt via text form to query about stock market data. Some questions that can be asked include
-Q1. What is the current stock price of Microsoft, Amazon, etc. 
-Q2. How much volume was traded
+🎯 LLM-Powered Scan Results
+Your file scanner now has three-layer analysis:
 
-Answers are transformed using
-* Pydantic models, structured JSON output
-* I have defined the Pydantic schemal 
+1. VirusTotal Scanning ✅
+Uploads file to VirusTotal API
+Gets scan ID and file metadata (SHA256, size, etc.)
+2. LLM Interpretation ✅
+New interpret_scan_results_with_llm() function:
+
+Passes scan data to your GPT model
+LLM analyzes and explains results in plain English
+Applies enterprise guardrails to interpretation output
+Returns user-friendly summary
+3. Gradio UI Integration ✅
+File uploaded → Scan initiated → Results interpreted
+3-panel output:
+🤖 AI Analysis (LLM interpretation in natural language)
+📋 Technical Details (raw scan data from VirusTotal)
+📊 Raw JSON (structured data for developers)
+
+
+
+
+Service 2: Semantic Query 
+Using MIT AI Risk Initiative Risk Repository (downloaded and stored under this folder)
+I will chunckit, create embeddings, and query against it for specific risk findings.
+
+
+
+Service 3: 
+Search the web for top 3 cybersecurity ai news articles. 
+API - regulatory conditions of API 
+Function calling - call the API (google maps, goog earth) to tell me where it is th
+MCP Server - email me the results 
+
 
 
 ### User Interface
