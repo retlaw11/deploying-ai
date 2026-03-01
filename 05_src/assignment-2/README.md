@@ -170,7 +170,7 @@ http://127.0.0.1:7860
 
 You should see the Gradio interface with four tabs:
 - **Chat** — General conversation with smart routing
-- **File Scanner** — Upload and scan files with VirusTotal. To test scan functionality and file upload I used a dummy test file "eicar.com.txt" it is a fake virus that is used to test antivirus files.
+- **File Scanner** — Upload and scan files with VirusTotal. To test scan functionality and file upload I used a dummy test file "eicar.com.txt" it is a fake virus that is used to test antivirus files. Available at: https://www.eicar.org
 - **AI Risk Search** — Hybrid search over the AI Risk database
 - **Security News** — Fetch and synthesize security news
 
