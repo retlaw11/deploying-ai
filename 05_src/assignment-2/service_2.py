@@ -7,6 +7,14 @@ Uses AI_risk_database_v4.csv as the source dataset.
 import csv
 import hashlib
 import json
+try:
+	import chromadb
+	from chromadb.config import Settings
+	CHROMADB_AVAILABLE = True
+except Exception:
+	chromadb = None
+	Settings = None
+	CHROMADB_AVAILABLE = False
 import math
 import os
 import re
@@ -37,6 +45,7 @@ BASE_DIR = os.path.dirname(__file__)
 DATASET_PATH = os.path.join(BASE_DIR, "AI_risk_database_v4.csv")
 CACHE_DIR = os.path.join(BASE_DIR, ".cache")
 EMBED_CACHE_PATH = os.path.join(CACHE_DIR, "ai_risk_embeddings.json")
+CHROMA_PERSIST_DIR = os.path.join(CACHE_DIR, "chromadb")
 
 
 # ====== CONFIG ======
@@ -180,7 +189,84 @@ class HybridRiskSearchService:
 		self.doc_tokens = [set(_tokenize(text)) for text in self.doc_texts]
 		self.dataset_sha = _dataset_sha256(DATASET_PATH)
 		self._embedding_cache: Dict[str, List[float]] = {}
-		self._load_cache()
+		self.chroma_client = None
+		self.collection = None
+		if CHROMADB_AVAILABLE:
+			self._init_chroma()
+		else:
+			self._load_cache()
+
+	def _init_chroma(self) -> None:
+		_ensure_cache_dir()
+		try:
+			self.chroma_client = chromadb.Client(
+				Settings(chroma_db_impl="duckdb+parquet", persist_directory=CHROMA_PERSIST_DIR)
+			)
+			try:
+				self.collection = self.chroma_client.get_collection("ai_risk_collection")
+			except Exception:
+				self.collection = self.chroma_client.create_collection(name="ai_risk_collection")
+
+			# Check dataset marker; if mismatch, recreate collection
+			try:
+				meta = self.collection.get(ids=["__dataset_sha__"], include=["metadatas"]) or {}
+				ids = meta.get("ids", [])
+				if not ids or ids[0] != "__dataset_sha__" or meta.get("metadatas", [{}])[0].get("dataset_sha") != self.dataset_sha:
+					self.chroma_client.delete_collection("ai_risk_collection")
+					self.collection = self.chroma_client.create_collection(name="ai_risk_collection")
+			except Exception:
+				pass
+
+			# Determine existing ids and add missing docs/embeddings
+			existing = set()
+			try:
+				resp = self.collection.get(include=["ids"]) or {}
+				existing = set(resp.get("ids", []))
+			except Exception:
+				existing = set()
+
+			to_add_ids = []
+			to_add_docs = []
+			to_add_metadatas = []
+			to_add_embeddings = []
+
+			for idx, text in enumerate(self.doc_texts):
+				sid = str(idx)
+				if sid in existing:
+					continue
+				to_add_ids.append(sid)
+				to_add_docs.append(text)
+				rec = self.records[idx]
+				to_add_metadatas.append({
+					"title": rec.get("Title", ""),
+					"ev_id": rec.get("Ev_ID", ""),
+				})
+				emb = self._embed_text(text)
+				to_add_embeddings.append(emb)
+
+			if to_add_ids:
+				try:
+					self.collection.add(
+						ids=to_add_ids,
+						documents=to_add_docs,
+						metadatas=to_add_metadatas,
+						embeddings=to_add_embeddings,
+					)
+				except Exception:
+					pass
+
+			# store dataset marker doc
+			try:
+				self.collection.add(
+					ids=["__dataset_sha__"],
+					documents=["dataset marker"],
+					metadatas=[{"dataset_sha": self.dataset_sha}],
+				)
+			except Exception:
+				pass
+		except Exception:
+			self.chroma_client = None
+			self.collection = None
 
 	def _load_cache(self) -> None:
 		_ensure_cache_dir()
@@ -219,12 +305,39 @@ class HybridRiskSearchService:
 
 	def _get_doc_embedding(self, index: int) -> List[float]:
 		key = str(index)
+		# prefer chroma stored embedding
+		if self.collection is not None:
+			try:
+				resp = self.collection.get(ids=[key], include=["embeddings"]) or {}
+				embeddings = resp.get("embeddings", [])
+				if embeddings and len(embeddings) > 0:
+					return embeddings[0]
+			except Exception:
+				pass
+
+		# fallback to in-memory/file cache
 		cached = self._embedding_cache.get(key)
 		if cached:
 			return cached
+
 		embedding = self._embed_text(self.doc_texts[index])
 		self._embedding_cache[key] = embedding
-		self._save_cache()
+		try:
+			# try to persist to chroma if available
+			if self.collection is not None:
+				try:
+					self.collection.add(ids=[key], documents=[self.doc_texts[index]], embeddings=[embedding])
+				except Exception:
+					pass
+		except Exception:
+			pass
+
+		# also save to file cache as a fallback
+		try:
+			self._save_cache()
+		except Exception:
+			pass
+
 		return embedding
 
 	def _lexical_scores(self, query_tokens: List[str]) -> List[float]:
