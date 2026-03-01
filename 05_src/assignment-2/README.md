@@ -2,13 +2,13 @@
 
 Version: 1.0.0
 
-Owner: Walter Pareja <retlaw1@gmail.com> — GitHub: retlaw11
+Owner: Walter P.  <retlaw1@gmail.com> — GitHub: retlaw11
 
 This folder contains `assignment-2` application: an AI application that combines three services under a Gradio-based conversational UI.
 
 Project objectives
 - Provide an integrated conversational interface for security workflows
-- Demonstrate hybrid search (lexical + semantic) over an AI Risk dataset
+- Demonstrate hybrid search (lexical + semantic) over an AI Risk dataset provided (AI_risk_database_v4.csv) and sourced from https://airisk.mit.edu
 - Fetch and summarize real-time security news using Google News RSS + LLM
 - Scan user-provided files with VirusTotal and interpret results for non-technical users
 
@@ -24,7 +24,7 @@ Core files
 - `.cache/` — Embeddings & caches
 
 Overview of functionality
-- File scanning (VirusTotal): Upload a file in the File Scanner tab; the app queries VirusTotal, fetches scan results, and then calls `interpret_scan_results_with_llm()` to produce an easy-to-read summary subject to guardrail checks.
+- File scanning (VirusTotal): Upload a file in the File Scanner tab; the app queries VirusTotal, fetches scan results, and then calls `interpret_scan_results_with_llm()` to produce an easy-to-read summary subject to guardrail checks. You can also request on the home page to run a file scan, the llm will send you to the separate tab.
 - AI Risk Search (Service 2): A hybrid retrieval pipeline: lexical pre-filtering followed by OpenAI embeddings re-ranking. The `Top results` slider controls how many final results are returned.
 - Security News (Service 3): Fetches Google News RSS results for a query, cleans article metadata, and sends the articles to OpenAI (GPT-4o-mini) for a synthesized executive summary, findings and recommendations.
 
@@ -64,41 +64,146 @@ Optional / examples (only for extended functionality / tests):
 Standard library (no install needed):
 - `os`, `sys`, `json`, `csv`, `re`, `time`, `datetime`, `hashlib`, `xml.etree.ElementTree`, `urllib.parse`, `dataclasses`, `enum`
 
-Install command (recommended in virtualenv)
+## Getting Started: Complete Setup Guide
+
+### Prerequisites
+- **Python 3.8+** installed on your machine
+- **Git** for version control
+- **API accounts** (see API Keys section below)
+
+### Step 1: Clone or navigate to the project
+
 ```bash
-python -m venv deploying-ai-env
+cd ../05_src/assignment-2
+```
+
+### Step 2: Create and activate a Python virtual environment
+
+```bash
+# Create virtual environment
+python3 -m venv deploying-ai-env
+
+# Activate it (macOS/Linux)
 source deploying-ai-env/bin/activate
-pip install --upgrade pip
-pip install gradio openai pydantic python-dotenv requests typing-extensions
-# Optional (for tests/examples)
-pip install langchain langgraph fastmcp langchain-mcp-adapters
-# Install ChromaDB for persistent embeddings (recommended)
-pip install chromadb
+
+# Activate it (Windows)
+# deploying-ai-env\Scripts\activate
 ```
 
-Configuration and secrets
-- Create a `.secrets` file in this folder (gitignored). Required keys:
-  - `API_GATEWAY_KEY` — API gateway key used for OpenAI requests
-  - `VIRUSTOTAL_API_KEY` — VirusTotal API key for file scanning
+You should see `(deploying-ai-env)` in your terminal prompt.
 
-Example `.secrets` content:
-```
-API_GATEWAY_KEY=sk-xxxxx
-VIRUSTOTAL_API_KEY=vt-xxxxx
-```
+### Step 3: Upgrade pip and install dependencies
 
-How to run
-1. Activate your virtualenv (see install command above)
-2. From this repository root run:
 ```bash
-cd .. /05_src/assignment-2
+# Upgrade pip to latest version
+python -m pip install --upgrade pip
+
+# Install required packages
+pip install gradio openai pydantic python-dotenv requests typing-extensions chromadb
+
+# Optional: Install additional packages for testing/extended features
+pip install langchain langgraph fastmcp langchain-mcp-adapters
+```
+
+### Step 4: Obtain and configure API keys
+
+#### 4a. VirusTotal API Key
+
+1. Go to **https://www.virustotal.com/gui/home/upload**
+2. Click **Sign In** (or create a free account)
+3. Navigate to **Settings** → **API Key** (or go directly to https://www.virustotal.com/gui/user/[username]/apikey)
+4. Copy your API key (you'll see a string starting with `ea827edd...`)
+
+#### 4b. OpenAI API Key (via API Gateway)
+
+The app uses an **API Gateway** to call OpenAI services. You need:
+- **API_GATEWAY_KEY**: Your API gateway authentication key (provided by your organization or API provider)
+
+If you don't have an API gateway set up:
+1. Create an **OpenAI account** at https://platform.openai.com
+2. Go to **API keys** and create a new secret key
+3. Use this as your `API_GATEWAY_KEY` (or set up your own API gateway that forwards to OpenAI)
+
+**Note**: This application uses:
+- `gpt-4o-mini` for chat and synthesis
+- `text-embedding-3-small` for semantic search
+
+### Step 5: Create the `.secrets` file
+
+Create a `.secrets` file in the `assignment-2/` directory with your API keys:
+
+```bash
+# Create the .secrets file
+cat > .secrets << 'EOF'
+VIRUSTOTAL_API_KEY=your_virustotal_api_key_here
+API_GATEWAY_KEY=your_api_gateway_key_here
+OPENAI_API_KEY=any_value
+EOF
+```
+
+### Step 6: Run the application
+
+```bash
+# Make sure you're in the project directory
+cd ../deploying-ai/05_src/assignment-2
+
+# Make sure virtualenv is activated
+source deploying-ai-env/bin/activate
+
+# Run the app
 python app.py
 ```
-3. Open `http://127.0.0.1:7860` in your browser. The UI includes:
-   - Chat tab (general LLM conversation + smart routing)
-   - File Scanner (VirusTotal scanning + AI interpretation)
-   - AI Risk Search (hybrid retrieval)
-   - Security News Search (web + LLM synthesis)
+
+You should see output like:
+```
+✅ VirusTotal API configured successfully
+✅ Application initialized
+Running on http://127.0.0.1:7860
+```
+
+### Step 7: Access the web interface
+
+Open your browser and navigate to:
+```
+http://127.0.0.1:7860
+```
+
+You should see the Gradio interface with four tabs:
+- **Chat** — General conversation with smart routing
+- **File Scanner** — Upload and scan files with VirusTotal
+- **AI Risk Search** — Hybrid search over the AI Risk database
+- **Security News** — Fetch and synthesize security news
+
+### Troubleshooting
+
+**Error: `ModuleNotFoundError: No module named 'gradio'`**
+- Solution: Make sure your virtual environment is activated (`source deploying-ai-env/bin/activate`)
+- Run: `pip install gradio openai pydantic python-dotenv requests typing-extensions chromadb`
+
+**Error: `VIRUSTOTAL_API_KEY not found in .secrets file`**
+- Solution: Create `.secrets` file with valid API keys (see Step 5)
+- Verify the file is in the correct directory: `/Users/retlawair/Desktop/deploying-ai/05_src/assignment-2/.secrets`
+
+**Error: `API Gateway connection failed`**
+- Solution: Check that `API_GATEWAY_KEY` in `.secrets` is correct and has active API credits
+- Verify your internet connection
+
+**Error: `chromadb` issues on M1/M2 Mac**
+- Solution: Install using: `pip install chromadb --upgrade --force-reinstall`
+
+**Port 7860 already in use**
+- Solution: Kill the existing process or specify a different port:
+```bash
+python app.py --server_name=127.0.0.1 --server_port=7861
+```
+
+### Deactivating the virtual environment
+
+When you're done working:
+```bash
+deactivate
+```
+
 
 Service descriptions 
 
@@ -127,7 +232,7 @@ Maintenance & extension notes
 - Consider adding Redis for caching embeddings and Prometheus for metrics in production.
 
 Contact & support
-- Owner: Walter Pareja — retlaw1@gmail.com
+- Owner:  — retlaw1@gmail.com
 
 ---
 Last updated: 2026-02-28
