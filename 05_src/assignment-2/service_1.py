@@ -172,13 +172,14 @@ def scan_file_with_details(file_path: str) -> tuple:
             print(f"✅ File scan initiated successfully: {scan_id}")
             return summary, structured_result
         else:
+            # Don't store raw response object - it might not be JSON serializable
             error_result = {
                 "status": "error",
                 "timestamp": datetime.now().isoformat(),
                 "error": "Unexpected API response",
-                "response": result
+                "response_status": result.get("status", "unknown") if isinstance(result, dict) else "unknown"
             }
-            return f"❌ Unexpected response: {result}", error_result
+            return f"❌ Unexpected response: {str(result)}", error_result
     
     except FileNotFoundError:
         error_result = {
