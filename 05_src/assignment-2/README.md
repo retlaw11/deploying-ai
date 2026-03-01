@@ -29,7 +29,7 @@ File uploaded → Scan initiated → Results interpreted
 3-panel output:
 🤖 AI Analysis (LLM interpretation in natural language)
 📋 Technical Details (raw scan data from VirusTotal)
-📊 Raw JSON (structured data for developers)
+📊 Raw JSON (structured data for developers).
 
 
 
