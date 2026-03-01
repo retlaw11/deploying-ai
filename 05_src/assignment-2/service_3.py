@@ -23,7 +23,8 @@ client = OpenAI(
     base_url='https://k7uffyg03f.execute-api.us-east-1.amazonaws.com/prod/openai/v1'
 )
 
-
+# This uses LLM to fetch and analyze security news from Google News RSS feed based on user queries. It provides both raw news results and an LLM-generated analysis 
+# of the trends and implications in the security landscape.
 def web_search(query: str, max_results: int = 5) -> str:
     """
     Fetch real-time news from Google News RSS feed focused on security and AI topics.
