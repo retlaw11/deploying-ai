@@ -740,6 +740,7 @@ def build_interface():
                 risk_search_btn = gr.Button("🔎 Search", variant="primary")
 
                 risk_results_md = gr.Markdown("Enter a question and click Search to see results.")
+                #this will also be populated by the landing page quick search for convenience
                 risk_results_json = gr.JSON(label="📄 Raw Results (JSON)", visible=False)
 
                 risk_search_btn.click(
